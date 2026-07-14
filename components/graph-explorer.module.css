@@ -1,4 +1,9 @@
+/*
+ * How much of the right edge the open panel occupies. The search box and the
+ * camera both shift by it, so neither hides behind the panel.
+ */
 .stage {
+  --panel-w: 0px;
   position: relative;
   width: 100%;
   height: 100svh;
@@ -17,6 +22,17 @@
 
 .canvas:active {
   cursor: grabbing;
+}
+
+.stage[data-panel='true'] {
+  --panel-w: 441px; /* 440 + the 1px left border */
+}
+
+/* Below this the panel is a bottom sheet, so it takes no width from the right. */
+@media (max-width: 640px) {
+  .stage[data-panel='true'] {
+    --panel-w: 0px;
+  }
 }
 
 /* ------------------------------------------------------------------ labels */
@@ -66,6 +82,26 @@
   font-size: 12.5px;
   line-height: 1.5;
   color: var(--ink-faint);
+}
+
+.byline {
+  margin-top: 12px;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  margin: 0 1px;
+  border: 1px solid var(--rule);
+  border-radius: 3px;
+  background: var(--paper-sunk);
+  font: inherit;
+  font-size: 10.5px;
+  color: var(--ink-soft);
 }
 
 .legend {
@@ -133,9 +169,11 @@
     display: none;
   }
 
+  /* The search box goes full width at the top here, so the masthead sits below it. */
   .masthead {
-    top: 22px;
+    top: 78px;
     left: 20px;
+    max-width: none;
   }
 
   .legend {

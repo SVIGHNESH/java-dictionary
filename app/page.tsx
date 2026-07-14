@@ -55,6 +55,7 @@ export default function Page() {
         ))}
 
         <footer className={styles.footer}>
+          <p className={styles.credit}>Built by Vighnesh Shukla</p>
           <p>
             Built the way{' '}
             <a href="https://www.aicodingdictionary.com/" target="_blank" rel="noreferrer noopener">

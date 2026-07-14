@@ -142,6 +142,13 @@
   text-align: left;
 }
 
+.credit {
+  margin-bottom: 10px;
+  color: var(--ink);
+  font-size: 14px;
+  letter-spacing: -0.01em;
+}
+
 .footer {
   max-width: 860px;
   margin: 0 auto;

@@ -29,6 +29,10 @@ export type SceneProps = {
   selected: string | null
   /** Section title to spotlight, from the legend. */
   spotlit: string | null
+  /** Ids matching the search query, or null when the search is empty. */
+  matched: Set<string> | null
+  /** Width of the open panel in CSS pixels, 0 when closed. */
+  panelWidth: number
   onHover: (id: string | null) => void
   onSelect: (id: string) => void
   /** One span per term, in `terms` order. Positioned imperatively each frame. */
@@ -42,6 +46,8 @@ export function GraphScene({
   hovered,
   selected,
   spotlit,
+  matched,
+  panelWidth,
   onHover,
   onSelect,
   labels,
@@ -111,6 +117,8 @@ export function GraphScene({
       projected: new THREE.Vector3(),
       below: new THREE.Vector3(),
       screenUp: new THREE.Vector3(),
+      screenRight: new THREE.Vector3(),
+      lookTarget: new THREE.Vector3(),
     }),
     [],
   )
@@ -138,6 +146,8 @@ export function GraphScene({
 
   /** Pixels travelled during the current gesture. A drag must not become a click. */
   const travelled = useRef(0)
+  /** Eased horizontal pan, in CSS pixels, that keeps the focus clear of the panel. */
+  const pan = useRef(0)
 
   useEffect(() => {
     const el = gl.domElement
@@ -263,6 +273,23 @@ export function GraphScene({
     )
     camera.lookAt(focus.current)
 
+    // The panel covers the right of the screen, so slide the view right by half
+    // its width. The focused node then lands in the middle of what is still
+    // visible rather than behind the panel. Moving the camera and its target by
+    // the same vector pans the image without turning it.
+    pan.current += (panelWidth / 2 - pan.current) * Math.min(1, delta * 4)
+    if (Math.abs(pan.current) > 0.5) {
+      const cam = camera as THREE.PerspectiveCamera
+      const halfV = (cam.fov / 2) * (Math.PI / 180)
+      const worldPerPixel = (2 * Math.tan(halfV) * o.radius) / size.height
+      const shift = pan.current * worldPerPixel
+
+      scratch.screenRight.set(1, 0, 0).applyQuaternion(camera.quaternion)
+      camera.position.addScaledVector(scratch.screenRight, shift)
+      scratch.lookTarget.copy(focus.current).addScaledVector(scratch.screenRight, shift)
+      camera.lookAt(scratch.lookTarget)
+    }
+
     // Fog tracks the camera, so it is always a depth cue across the cloud and
     // never a haze over the whole thing. The near half stays unfogged.
     if (fogRef.current) {
@@ -271,7 +298,8 @@ export function GraphScene({
     }
 
     const focusId = hovered ?? selected
-    const dimming = Boolean(neighbours) || Boolean(spotlit)
+    // Anything that narrows the graph dims whatever it leaves out.
+    const dimming = Boolean(neighbours) || Boolean(spotlit) || Boolean(matched)
 
     // Screen-down, in world space. Used to hang each label below its node by an
     // exact pixel amount rather than a world-space guess.
@@ -286,7 +314,8 @@ export function GraphScene({
       const isFocus = term.id === focusId
       const near = neighbours ? neighbours.has(term.id) : true
       const inSection = spotlit ? term.section === spotlit : true
-      const lit = near && inSection
+      const inSearch = matched ? matched.has(term.id) : true
+      const lit = near && inSection && inSearch
 
       scratch.position.set(node.x, node.y, node.z)
       scratch.scale.setScalar(r * (isFocus ? 1.6 : 1))
@@ -341,11 +370,14 @@ export function GraphScene({
       edgePositions[o + 5] = b.z
 
       const touchesFocus = focusId != null && (edges[i].source === focusId || edges[i].target === focusId)
+      // An edge stays lit only if both of its ends survive every active filter.
       const inSection = spotlit ? terms[si].section === spotlit && terms[ti].section === spotlit : true
+      const inSearch = matched ? matched.has(edges[i].source) && matched.has(edges[i].target) : true
+      const lit = inSection && inSearch
 
       let color: THREE.Color
       if (touchesFocus) color = EDGE_LIVE
-      else if (dimming && !inSection) color = scratch.edgeColor.copy(EDGE_IDLE).lerp(PAPER, 0.8)
+      else if (dimming && !lit) color = scratch.edgeColor.copy(EDGE_IDLE).lerp(PAPER, 0.8)
       else color = EDGE_IDLE
 
       for (let v = 0; v < 2; v++) {

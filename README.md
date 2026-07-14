@@ -68,8 +68,15 @@ Link on the first occurrence of a term in an entry, not every occurrence.
 
 ## Interaction
 
+- Press `/` or click the box to search. Typing a term's exact name selects it and opens its
+  description; a partial query ranks title matches above description matches, dims the graph to
+  the survivors, and `Enter` opens the top hit.
 - Drag to turn, scroll to zoom, click a term to open it.
 - Hovering a node lights it and everything it connects to, and dims the rest.
 - Clicking a section in the legend spotlights that section.
 - Links inside an open entry move the graph rather than scrolling the page.
-- `Escape` clears the selection.
+- `Escape` clears the search, then the selection.
+
+## Credits
+
+Built by Vighnesh Shukla.
