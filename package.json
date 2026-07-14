@@ -1,0 +1,27 @@
+{
+  "name": "java-dictionary",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --turbopack -p 3210",
+    "build": "next build --turbopack",
+    "start": "next start -p 3210"
+  },
+  "dependencies": {
+    "@react-three/fiber": "^9.6.1",
+    "d3-force-3d": "^3.0.6",
+    "gray-matter": "^4.0.3",
+    "marked": "^18.0.6",
+    "next": "^16.2.10",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "three": "^0.185.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.185.1",
+    "typescript": "^5.9.3"
+  }
+}

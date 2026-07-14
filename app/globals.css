@@ -1,0 +1,71 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  margin: 0;
+}
+
+:root {
+  /* A warm paper ground, so the coloured nodes are the only saturated thing on screen. */
+  --paper: #eae8e4;
+  --paper-sunk: #e2dfda;
+  --ink: #1c1a17;
+  --ink-soft: #57524b;
+  --ink-faint: #8d867c;
+  --rule: #d0ccc4;
+
+  --font-mono: ui-monospace, 'SF Mono', SFMono-Regular, Menlo, monospace;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 15px;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+a {
+  color: inherit;
+  text-decoration-color: var(--ink-faint);
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-color: var(--ink);
+}
+
+.skip-link {
+  position: absolute;
+  top: -100px;
+  left: 12px;
+  z-index: 100;
+  padding: 10px 14px;
+  background: var(--ink);
+  color: var(--paper);
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  top: 12px;
+}
+
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 3px;
+}

@@ -1,0 +1,145 @@
+.stage {
+  position: relative;
+  width: 100%;
+  height: 100svh;
+  overflow: hidden;
+  background: var(--paper);
+  /* The canvas owns the wheel while it is on screen. */
+  overscroll-behavior: none;
+}
+
+.canvas {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+  touch-action: none;
+}
+
+.canvas:active {
+  cursor: grabbing;
+}
+
+/* ------------------------------------------------------------------ labels */
+
+.labels {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.label {
+  position: absolute;
+  top: 0;
+  left: 0;
+  white-space: nowrap;
+  font-size: 11.5px;
+  letter-spacing: 0.01em;
+  color: var(--ink);
+  will-change: transform, opacity;
+  /* A halo, so a label crossing an edge line stays legible. */
+  text-shadow:
+    0 0 3px var(--paper),
+    0 0 6px var(--paper),
+    0 0 10px var(--paper);
+}
+
+/* --------------------------------------------------------------- chrome */
+
+.masthead {
+  position: absolute;
+  top: 34px;
+  left: 34px;
+  z-index: 3;
+  max-width: 34ch;
+  pointer-events: none;
+}
+
+.title {
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  margin-top: 6px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-faint);
+}
+
+.legend {
+  position: absolute;
+  bottom: 30px;
+  left: 34px;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 3px 8px 3px 4px;
+  border: 0;
+  border-radius: 3px;
+  background: transparent;
+  font: inherit;
+  font-size: 11.5px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  transition:
+    opacity 0.18s ease,
+    color 0.18s ease,
+    background 0.18s ease;
+}
+
+.legendItem:hover {
+  background: rgba(0, 0, 0, 0.04);
+  color: var(--ink);
+}
+
+.legendItem[data-active='true'] {
+  color: var(--ink);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.legendItem[data-dimmed='true'] {
+  opacity: 0.38;
+}
+
+.swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.hint {
+  position: absolute;
+  bottom: 30px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 3;
+  font-size: 11.5px;
+  color: var(--ink-faint);
+  pointer-events: none;
+}
+
+@media (max-width: 900px) {
+  .hint {
+    display: none;
+  }
+
+  .masthead {
+    top: 22px;
+    left: 20px;
+  }
+
+  .legend {
+    left: 20px;
+    bottom: 20px;
+  }
+}
