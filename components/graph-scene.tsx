@@ -386,7 +386,10 @@ export function GraphScene({
    * It eases in and HOLDS. A ring that pulses is a screensaver.
    */
   const ringRef = useRef<THREE.Mesh>(null)
-  const ringScale = useRef(0)
+  /** Eased presence, 0..1. Drives the ring's OPACITY — never its size. */
+  const ringPresence = useRef(0)
+  /** The last focused node, so the fade-out can keep tracking it after focus is gone. */
+  const ringIndex = useRef(-1)
 
   /** Per-label scratch for the frame loop. Preallocated: the loop allocates nothing. */
   const L = useMemo(
@@ -397,6 +400,8 @@ export function GraphScene({
       candidate: new Uint8Array(terms.length),
       wasVisible: new Uint8Array(terms.length),
       boxes: new Float32Array(terms.length * 4),
+      /** Eased hover growth per node, 0..1. Drives scale, label offset and fade. */
+      focus: new Float32Array(terms.length),
     }),
     [terms],
   )
@@ -488,6 +493,8 @@ export function GraphScene({
 
   /** Pixels travelled during the current gesture. A drag must not become a click. */
   const travelled = useRef(0)
+  /** Whether the canvas is currently showing the pointer cursor for a hovered node. */
+  const cursorHot = useRef(false)
   /** Eased horizontal pan, in CSS pixels, that keeps the focus clear of the panel. */
   const pan = useRef(0)
 
@@ -657,6 +664,15 @@ export function GraphScene({
 
     const focusId = hovered ?? selected
     const focusIndex = focusId != null ? (indexById.get(focusId) ?? -1) : -1
+
+    // The cursor is hover feedback too: a hand over a node, the grab back on the
+    // field. Inline only while hot — the empty string falls back to the
+    // stylesheet's grab/grabbing pair, which keeps owning the drag.
+    const wantPointer = hovered != null && !dragging.current
+    if (wantPointer !== cursorHot.current) {
+      cursorHot.current = wantPointer
+      gl.domElement.style.cursor = wantPointer ? 'pointer' : ''
+    }
     // Anything that narrows the graph dims whatever it leaves out.
     const dimming = Boolean(neighbours) || Boolean(spotlit) || Boolean(matched)
     // Dolly in far enough and the rim resolves into names: a real level of detail.
@@ -685,7 +701,23 @@ export function GraphScene({
       const lit = near && inSection && inSearch
 
       scratch.position.set(node.x, node.y, node.z)
-      scratch.scale.setScalar(r * (isFocus ? 1.6 : 1))
+
+      /*
+       * The hover growth, eased. The scale used to jump between 1 and 1.6 in a
+       * single frame — a pop, while the ring beside it eased — and it snapped the
+       * label offset and the depth-fade exemption along with it. One eased value
+       * now drives all three, so node, ring and label move as a single gesture.
+       * Growing is brisk (the cursor is waiting); releasing is softer. The grown
+       * sphere is also the raycast target, so the ease doubles as hysteresis
+       * against hover flicker at the silhouette.
+       */
+      const focusTarget = isFocus ? 1 : 0
+      const focusRate = reducedMotion.current ? 1 : Math.min(1, delta * (focusTarget > L.focus[i] ? 14 : 8))
+      const f = L.focus[i] + (focusTarget - L.focus[i]) * focusRate
+      L.focus[i] = f
+      const grown = r * (1 + 0.6 * f)
+
+      scratch.scale.setScalar(grown)
       scratch.matrix.compose(scratch.position, scratch.quaternion, scratch.scale)
       mesh.setMatrixAt(i, scratch.matrix)
 
@@ -712,8 +744,10 @@ export function GraphScene({
       // The focused node is exempt. It sits at the focus plane, which is halfway
       // through the depth ramp, so it would otherwise be washed a fifth of the way
       // into the ground — and the one thing you are actually looking at should be
-      // the most saturated object on screen.
-      const fade = isFocus ? 0 : (faded ? 0.18 : 0.45) * t
+      // the most saturated object on screen. The exemption rides the same eased
+      // value as the growth, so the colour swells with the sphere instead of
+      // flashing to full saturation a frame before it.
+      const fade = (faded ? 0.18 : 0.45) * t * (1 - f)
       scratch.color.copy(faded ? dimColors[i] : baseColors[i]).lerp(ground, fade)
       mesh.setColorAt(i, scratch.color)
 
@@ -725,8 +759,9 @@ export function GraphScene({
       const behind = scratch.projected.z > 1
 
       // Project a second point one radius "below" the node on screen, so the
-      // label clears the node at every zoom level.
-      scratch.below.copy(scratch.position).addScaledVector(scratch.screenUp, -r).project(camera)
+      // label clears the node at every zoom level. The GROWN radius, not the
+      // resting one: the enlarged hover sphere used to swallow its own label.
+      scratch.below.copy(scratch.position).addScaledVector(scratch.screenUp, -grown).project(camera)
 
       L.x[i] = (scratch.projected.x * 0.5 + 0.5) * size.width
       L.y[i] = (-scratch.below.y * 0.5 + 0.5) * size.height
@@ -908,20 +943,33 @@ export function GraphScene({
     /* focus ring */
     const ring = ringRef.current
     if (ring) {
-      const target = focusIndex >= 0 ? 1 : 0
-      ringScale.current += (target - ringScale.current) * Math.min(1, delta * 12)
+      // Hold on to the last focused node: the fade-out below must keep tracking
+      // it — and the moving camera — after focus is gone. Updating only while
+      // focused froze the ring mid-air at full opacity as the sphere shrank out
+      // of it, then blinked it off: a freeze and a pop instead of an ease.
+      if (focusIndex >= 0) ringIndex.current = focusIndex
+      const ri = ringIndex.current
 
-      if (ringScale.current < 0.01) {
+      const target = focusIndex >= 0 ? 1 : 0
+      ringPresence.current += (target - ringPresence.current) * Math.min(1, delta * 12)
+
+      if (ringPresence.current < 0.01 || ri < 0) {
         ring.visible = false
-      } else if (focusIndex >= 0) {
-        const node = nodes[focusIndex]
+      } else {
+        const node = nodes[ri]
         ring.visible = true
         ring.position.set(node.x, node.y, node.z)
         // Billboard: copy the camera's orientation so the ring always faces us.
         ring.quaternion.copy(camera.quaternion)
-        ring.scale.setScalar(radiusOf(node.authority) * 1.9 * ringScale.current)
-        ;(ring.material as THREE.MeshBasicMaterial).color.copy(baseColors[focusIndex])
-        ;(ring.material as THREE.MeshBasicMaterial).opacity = ringScale.current
+        // Sized off the node's eased growth ALONE; presence is opacity, never
+        // size. Scaling the ring in and out made it slide from behind the
+        // sphere and collapse back into it. Fading keeps it glued to the
+        // surface both ways — the inner edge (0.86 of the geometry) sits just
+        // inside the silhouette, and the sphere occludes the overlap, so the
+        // ring hugs the sphere with no gap at any point of either ease.
+        ring.scale.setScalar(radiusOf(node.authority) * (1 + 0.6 * L.focus[ri]) * 1.14)
+        ;(ring.material as THREE.MeshBasicMaterial).color.copy(baseColors[ri])
+        ;(ring.material as THREE.MeshBasicMaterial).opacity = ringPresence.current
       }
     }
 
