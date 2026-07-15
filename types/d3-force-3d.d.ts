@@ -9,4 +9,11 @@ declare module 'd3-force-3d' {
   export function forceX(x?: number): any
   export function forceY(y?: number): any
   export function forceZ(z?: number): any
+  // Exported by the package, but was missing from this declaration.
+  export function forceRadial(
+    radius: number | ((d: any) => number),
+    x?: number,
+    y?: number,
+    z?: number,
+  ): any
 }

@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useRef } from 'react'
-import { sectionCss } from '@/lib/color'
+import { swatchVars } from '@/lib/color'
 import type { GraphTerm } from './graph-explorer'
 import styles from './term-panel.module.css'
 
@@ -52,7 +52,7 @@ export function TermPanel({ term, byId, onSelect, onClose }: Props) {
 
       <div className={styles.scroll}>
         <p className={styles.section}>
-          <span className={styles.swatch} style={{ background: sectionCss(term.color) }} />
+          <span className={`${styles.swatch} swatch-color`} style={swatchVars(term.color)} />
           {term.section}
         </p>
 
@@ -72,7 +72,7 @@ export function TermPanel({ term, byId, onSelect, onClose }: Props) {
                   type="button"
                   className={styles.chip}
                   onClick={() => onSelect(r.id)}
-                  style={{ ['--chip' as string]: sectionCss(r.color) }}
+                  style={swatchVars(r.color)}
                 >
                   {r.title}
                 </button>

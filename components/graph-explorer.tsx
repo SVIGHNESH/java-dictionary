@@ -6,7 +6,10 @@ import { GraphScene } from './graph-scene'
 import { TermPanel } from './term-panel'
 import { LoadingScreen } from './loading-screen'
 import { Search } from './search'
-import { sectionCss, type Oklch } from '@/lib/color'
+import { ThemeToggle } from './theme-toggle'
+import { useTheme } from './theme-provider'
+import { groundHex } from '@/lib/theme'
+import { swatchVars, type ColorPair } from '@/lib/color'
 import styles from './graph-explorer.module.css'
 
 export type GraphTerm = {
@@ -15,13 +18,15 @@ export type GraphTerm = {
   description: string
   html: string
   section: string
-  color: Oklch
+  color: ColorPair
   links: string[]
   backlinks: string[]
-  degree: number
+  /** PageRank over the links. Drives node size, the layout's shells, and label priority. */
+  authority: number
+  tier: 1 | 2 | 3
 }
 
-export type GraphEdge = { source: string; target: string }
+export type GraphEdge = { source: string; target: string; mutual: boolean }
 
 /** Kept in step with the panel's width in term-panel.module.css. */
 const PANEL_WIDTH = 441
@@ -29,10 +34,11 @@ const PANEL_WIDTH = 441
 type Props = {
   terms: GraphTerm[]
   edges: GraphEdge[]
-  sections: { title: string; color: Oklch }[]
+  sections: { title: string; color: ColorPair }[]
 }
 
 export function GraphExplorer({ terms, edges, sections }: Props) {
+  const { resolved } = useTheme()
   const [hovered, setHovered] = useState<string | null>(null)
   const [selected, setSelected] = useState<string | null>(null)
   const [spotlit, setSpotlit] = useState<string | null>(null)
@@ -103,11 +109,26 @@ export function GraphExplorer({ terms, edges, sections }: Props) {
       <Canvas
         className={styles.canvas}
         dpr={[1, 2]}
-        camera={{ fov: 42, near: 1, far: 900, position: [0, 0, 320] }}
+        // `flat` is NoToneMapping. Without it r3f applies an ACES filmic curve to
+        // everything that has not opted out, which the nodes have (`toneMapped`)
+        // and the edges had not. A dimmed edge is meant to lerp into the ground
+        // and vanish; tone-mapped, it bottomed out at a curve of the ground and
+        // left a permanent smudge instead.
+        flat
+        // far must clear the wheel's own dolly-out clamp (900) plus the radius of
+        // the cloud, or the back of the graph is cut by a hard plane at full zoom.
+        camera={{ fov: 42, near: 1, far: 4000, position: [0, 0, 320] }}
         gl={{ antialias: true }}
         onPointerMissed={() => setSelected(null)}
       >
-        <color attach="background" args={['#eae8e4']} />
+        {/*
+          r3f swaps the THREE.Color behind this without touching the scene graph,
+          the mesh, the geometry or the simulation. The canvas itself is mounted
+          once and never keyed on the theme: remounting it would drop the WebGL
+          context, restart the force layout and re-show the loading screen, so the
+          graph would visibly reshuffle every time someone hit the toggle.
+        */}
+        <color attach="background" args={[groundHex(resolved)]} />
         <GraphScene
           terms={terms}
           edges={edges}
@@ -116,6 +137,7 @@ export function GraphExplorer({ terms, edges, sections }: Props) {
           spotlit={spotlit}
           matched={matched}
           panelWidth={selectedTerm ? PANEL_WIDTH : 0}
+          theme={resolved}
           onHover={setHovered}
           onSelect={setSelected}
           labels={labels}
@@ -135,13 +157,24 @@ export function GraphExplorer({ terms, edges, sections }: Props) {
               labels.current[i] = el
             }}
             className={styles.label}
+            data-tier={term.tier}
           >
             {term.title}
+            {/*
+              A second channel on the focused label. Nine categories is past what
+              colour alone can separate — especially under colour-vision deficiency
+              — so the thing you are actually looking at says which section it is
+              in, in words.
+            */}
+            <span className={styles.labelSection}>{term.section}</span>
           </span>
         ))}
       </div>
 
-      <Search terms={terms} query={query} onQuery={setQuery} results={results} onSelect={select} />
+      <div className={styles.topRight}>
+        <Search terms={terms} query={query} onQuery={setQuery} results={results} onSelect={select} />
+        <ThemeToggle />
+      </div>
 
       <header className={styles.masthead}>
         <h1 className={styles.title}>The Java Dictionary</h1>
@@ -161,7 +194,7 @@ export function GraphExplorer({ terms, edges, sections }: Props) {
             data-dimmed={spotlit !== null && spotlit !== section.title}
             onClick={() => setSpotlit((s) => (s === section.title ? null : section.title))}
           >
-            <span className={styles.swatch} style={{ background: sectionCss(section.color) }} />
+            <span className={`${styles.swatch} swatch-color`} style={swatchVars(section.color)} />
             {section.title}
           </button>
         ))}

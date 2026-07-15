@@ -8,7 +8,7 @@
   width: 100%;
   height: 100svh;
   overflow: hidden;
-  background: var(--paper);
+  background: var(--ground);
   /* The canvas owns the wheel while it is on screen. */
   overscroll-behavior: none;
 }
@@ -53,14 +53,74 @@
   letter-spacing: 0.01em;
   color: var(--ink);
   will-change: transform, opacity;
-  /* A halo, so a label crossing an edge line stays legible. */
+  /*
+   * An opaque stroke in the ground colour, painted *under* the glyph, plus the
+   * old blurred halo as a soft outer falloff.
+   *
+   * The blur alone was tuned to survive a 1px grey hairline. The edges are now
+   * 1.1-1.8px coloured ribbons, and text sitting directly on one of those is
+   * unreadable without a hard backing. The stroke guarantees the pixels
+   * immediately around each glyph are the ground.
+   */
+  paint-order: stroke fill;
+  -webkit-text-stroke: 3px var(--ground);
   text-shadow:
-    0 0 3px var(--paper),
-    0 0 6px var(--paper),
-    0 0 10px var(--paper);
+    0 0 4px var(--ground),
+    0 0 8px var(--ground);
+  /* Without this, labels appearing and disappearing as the graph turns strobe. */
+  transition: opacity 0.12s linear;
+}
+
+/* The four nouns the language is spoken in. The map's city names. */
+.label[data-tier='1'] {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.label[data-focus='true'] {
+  font-weight: 600;
+  z-index: 1;
+}
+
+.labelSection {
+  display: none;
+}
+
+.label[data-focus='true'] .labelSection {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .label {
+    transition: none;
+  }
 }
 
 /* --------------------------------------------------------------- chrome */
+
+/*
+ * The top-right corner, as one row. It owns the offset that keeps the chrome
+ * clear of the open panel, and the transition that animates it. The search box
+ * used to carry that `calc` and that transition itself; adding a second element
+ * to this corner would have meant two independently-animating copies of the same
+ * value, free to drift apart mid-slide.
+ */
+.topRight {
+  position: absolute;
+  top: 30px;
+  right: calc(34px + var(--panel-w, 0px));
+  z-index: 5;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  transition: right 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+}
 
 .masthead {
   position: absolute;
@@ -98,7 +158,7 @@
   margin: 0 1px;
   border: 1px solid var(--rule);
   border-radius: 3px;
-  background: var(--paper-sunk);
+  background: var(--ground-sunk);
   font: inherit;
   font-size: 10.5px;
   color: var(--ink-soft);
@@ -133,13 +193,13 @@
 }
 
 .legendItem:hover {
-  background: rgba(0, 0, 0, 0.04);
+  background: var(--wash);
   color: var(--ink);
 }
 
 .legendItem[data-active='true'] {
   color: var(--ink);
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--wash-strong);
 }
 
 .legendItem[data-dimmed='true'] {
@@ -167,6 +227,12 @@
 @media (max-width: 900px) {
   .hint {
     display: none;
+  }
+
+  .topRight {
+    top: 20px;
+    left: 20px;
+    right: calc(20px + var(--panel-w, 0px));
   }
 
   /* The search box goes full width at the top here, so the masthead sits below it. */

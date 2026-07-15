@@ -1,7 +1,7 @@
 .document {
   position: relative;
   z-index: 2;
-  background: var(--paper);
+  background: var(--ground);
   border-top: 1px solid var(--rule);
   padding: 96px 32px 120px;
 }
@@ -109,7 +109,7 @@
 }
 
 .body :global(pre) {
-  background: var(--paper-sunk);
+  background: var(--ground-sunk);
   border: 1px solid var(--rule);
   padding: 16px;
   overflow-x: auto;
@@ -124,7 +124,7 @@
 }
 
 .body :global(p code) {
-  background: var(--paper-sunk);
+  background: var(--ground-sunk);
   padding: 1px 5px;
 }
 
@@ -140,6 +140,20 @@
   border: 1px solid var(--rule);
   padding: 8px 10px;
   text-align: left;
+}
+
+.footerTheme {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 28px;
+}
+
+.footerThemeLabel {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
 }
 
 .credit {

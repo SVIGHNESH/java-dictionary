@@ -6,10 +6,34 @@
  * Nine categories is past the point where hue alone separates them, so the
  * palette moves lightness and chroma too. See CURRICULUM for the values.
  */
+import type { CSSProperties } from 'react'
+
 export type Oklch = readonly [l: number, c: number, h: number]
+
+/**
+ * A section's colour on each ground. The hue is byte-identical across the two,
+ * so a section reads as the same colour relit rather than as a different colour;
+ * only lightness and chroma move, by the amount each ground needs.
+ */
+export type ColorPair = { light: Oklch; dark: Oklch }
 
 export function sectionCss([l, c, h]: Oklch): string {
   return `oklch(${l} ${c} ${h})`
+}
+
+/**
+ * Both of a section's colours, as custom properties, so CSS can pick one and no
+ * JavaScript has to.
+ *
+ * The swatches are server-rendered (the legend, the document's section heads, the
+ * search results, the panel). Swapping their colour in a client effect would
+ * paint the light swatch first and then correct it — a visible flash on every
+ * dark-mode load. Emitting both and letting a `:root[data-theme='dark']` rule
+ * choose is correct in the first painted byte.
+ */
+export function swatchVars({ light, dark }: ColorPair): CSSProperties {
+  // React's CSSProperties has no index signature for custom properties.
+  return { '--sw-l': sectionCss(light), '--sw-d': sectionCss(dark) } as CSSProperties
 }
 
 /** OKLCH -> sRGB hex, via OKLab and linear sRGB. */

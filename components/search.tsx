@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { sectionCss } from '@/lib/color'
+import { swatchVars } from '@/lib/color'
 import type { GraphTerm } from './graph-explorer'
 import styles from './search.module.css'
 
@@ -133,7 +133,7 @@ export function Search({ terms, query, onQuery, results, onSelect }: Props) {
                 onMouseEnter={() => setActive(i)}
                 onClick={() => choose(term)}
               >
-                <span className={styles.swatch} style={{ background: sectionCss(term.color) }} />
+                <span className={`${styles.swatch} swatch-color`} style={swatchVars(term.color)} />
                 <span className={styles.resultTitle}>{term.title}</span>
                 <span className={styles.resultSection}>{term.section}</span>
               </button>

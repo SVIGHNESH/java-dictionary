@@ -1,10 +1,12 @@
+/*
+ * No self-positioning. The `.topRight` row in graph-explorer.module.css owns the
+ * offset from the panel and the transition for everything in that corner, so the
+ * search box and the theme toggle cannot drift apart mid-animation.
+ */
 .root {
-  position: absolute;
-  top: 30px;
-  right: calc(34px + var(--panel-w, 0px));
-  z-index: 5;
+  position: relative;
   width: 300px;
-  transition: right 0.24s cubic-bezier(0.22, 1, 0.36, 1);
+  flex: none;
 }
 
 .field {
@@ -12,7 +14,8 @@
   align-items: center;
   gap: 8px;
   padding: 0 10px;
-  background: var(--paper);
+  /* Floats over the canvas, so it lifts off the ground like the panel does. */
+  background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: 4px;
   transition: border-color 0.15s ease;
@@ -67,18 +70,23 @@
 }
 
 .clear:hover {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--wash-strong);
   color: var(--ink);
 }
 
+/* Out of flow, so the dropdown cannot change the height of the flex row above it. */
 .results {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
   margin: 6px 0 0;
   padding: 4px;
   list-style: none;
-  background: var(--paper);
+  background: var(--surface);
   border: 1px solid var(--rule);
   border-radius: 4px;
-  box-shadow: 0 18px 40px -24px rgba(28, 26, 23, 0.4);
+  box-shadow: 0 18px 40px -24px var(--shadow);
   max-height: 320px;
   overflow-y: auto;
 }
@@ -100,7 +108,7 @@
 }
 
 .result[data-active='true'] {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--wash-strong);
 }
 
 .swatch {
@@ -132,9 +140,8 @@
 
 @media (max-width: 900px) {
   .root {
-    top: 20px;
-    right: calc(20px + var(--panel-w, 0px));
-    left: 20px;
     width: auto;
+    flex: 1;
+    min-width: 0;
   }
 }

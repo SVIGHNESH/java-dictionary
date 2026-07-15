@@ -7,7 +7,7 @@
   align-items: center;
   justify-content: center;
   gap: 14px;
-  background: var(--paper);
+  background: var(--ground);
   transition:
     opacity 0.42s ease,
     visibility 0.42s;
